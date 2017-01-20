@@ -8,6 +8,7 @@
 #Create GUI (tkinter) - low
 	#Add in network map - low
 #Convert .py to .exe ((PyInstaller-3.2.1)) - medium
+#Convert for loops into functions to add into queue/threads
 
 
 
