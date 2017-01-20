@@ -3,27 +3,69 @@
 import queue
 import threading
 from threading import Thread
+import re
+import os
+import subprocess
 
-#Basic FIFO (First in, First out)
+ipList = list() #List of IP Address found on ARP Table
+regExpFindIPAddress =  re.compile ('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+arpLines = os.popen('arp -a') #Runs ARP CMD, saves results
+totalIPFound = None
+pingPass = 0
 
 
-def do_stuff(q):
-	while True:
-		print(q.get())
-		q.task_done()
 
-q = queue.Queue(maxsize=0)
+primaryQueue = queue.Queue(maxsize=0)
 num_threads = 10
 
+
+#Function to run through queue
+def do_stuff(primaryQueue):
+	while True:
+		currentOperation = primaryQueue.get()
+		#print("Currently Running: {}".format(currentOperation))
+		currentOperation()
+		primaryQueue.task_done()
+
+def _get_Active_IP_Addresses(currentIPIteration, pingPass):
+		#print("Iteration {}".format(currentIPIteration))
+		res = subprocess.Popen(['ping', '-n', '1', ipList[currentIPIteration]])
+		#print("CMD PINGING: {} ".format(ipList[currentIPIteration]))
+		streamdata = res.communicate()[0]
+		rc = res.returncode
+	
+		if rc == 0: #Good Ping
+			pingPass += 1
+		elif rc == 2: #No reply from host
+			ipList.pop(currentIPIteration)		
+		else: #General Failure to ping
+			pingPass -= 1
+
+
+
+for lines in arpLines: #Store IP Address out of each line // ADD IN REGULAR EXPRESSION TO STORE IF DYNAMIC OR STATIC IP
+	ipMatch = regExpFindIPAddress.search(lines)
+	if ipMatch:
+		ipList.append(ipMatch.group())
+
+
+#add tasks to queue
+for currentIP in range(len(ipList)):
+	primaryQueue.put(lambda currentIP = currentIP, pingPass = pingPass: _get_Active_IP_Addresses(currentIP, pingPass))
+
+
+
+#Loop to create threads, given queue to process
 for i in range(num_threads):
-	worker = Thread(target=do_stuff, args=(q,))
+	worker = Thread(target=do_stuff, args=(primaryQueue,)) #target is the function that pops off queue args = arguments for queue function
 	worker.setDaemon(True)
 	worker.start()
-print(threading.activeCount())
-for x in range(100):
-	q.put(x)
+	#print("Started Worker {}, Number {}".format(worker, i))
 
-q.join()
+
+
+primaryQueue.join()
+print(pingPass)
 
 
 
