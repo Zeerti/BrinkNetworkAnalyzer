@@ -49,7 +49,7 @@ for lines in arpLines: #Store IP Address out of each line // ADD IN REGULAR EXPR
 		ipList.append(ipMatch.group())
 
 
-#add tasks to queue
+#add tasks to queue ////////////// DOES NOT NEED FUNCTION TO DO THIS
 for currentIP in range(len(ipList)):
 	primaryQueue.put(lambda currentIP = currentIP, pingPass = pingPass: _get_Active_IP_Addresses(currentIP, pingPass))
 
