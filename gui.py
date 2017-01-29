@@ -32,7 +32,7 @@ class GUI(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, wx.ID_ANY, "Network Analyzer")
         self.window = wx.GetActiveWindow()
-        self.scan = scan.ScanNetwork(10)                                                        #Init scanNetwork class, 10 threads
+        self.scan = scan.ScanNetwork(20)                                                        #Init scanNetwork class, 10 threads
 
         self.SetSize(1200,900)                                                                  #Set window size
         self.Centre()     
@@ -155,12 +155,13 @@ class GUI(wx.Frame):
         self.currentSelection = event.GetIndex()
         for i in range(0, self.InsertCount):
             if(self.InsertCount > 0):
-                #print("Deleting Item Index {}".format(i))
+                #print("Deleting Item Index {}".f`ormat(i))
                 self.detailedULC.DeleteItem(i)
                 self.InsertCount -= 1
 
         self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._Get_Ping_Statistics(event.GetIndex()))
         self.InsertCount += 1
+        self.currentSelection = event.GetText()
         #self.detailedULC.InsertStringItem(self.detailedIndex, self.scan._Get_Ping_Statistics(event.GetIndex()))
 
     #----------------------------------------------------------------------
@@ -196,9 +197,12 @@ class GUI(wx.Frame):
     #----------------------------------------------------------------------
     def ScanOpenPortsOnTargetIP(self, event):
 
-        for currentPort in range(0, 10000):
+        for currentPort in range(0, 1024):
             #print("{} CURRENT PORT".format(currentPort))
             self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection, currentPort = currentPort: self.scan._Scan_IP_Port(ipaddress, currentPort))
+
+        self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
+        self.InsertCount += 1
 
         self.scan._startScan()
         self.scan.primaryQueue.join() #wait until all IPs have been scanned on port, port.
@@ -207,12 +211,6 @@ class GUI(wx.Frame):
         for ports in range(0, self.scan._get_Open_Ports_Size()):
             self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._get_Open_Ports(ports))
             self.InsertCount += 1
-
-        self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
-        self.InsertCount += 1
-        #print(self.scan._get_Open_Ports_Size)
-        #print(self.scan._get_Open_Ports(0))
-        
 
         
 

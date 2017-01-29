@@ -78,19 +78,18 @@ class ScanNetwork():
 	#----------------------------------------------------------------------
 	def _Scan_IP_Port(self, address, port):
 		# Create a TCP socket
-		socketConnection = socket.socket() 
-		socketConnection.settimeout(10)
-		TempAddress = str(address)
+		socketConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		socketConnection.settimeout(1)
+		HOST = str(address)
 		TempPort = port
 		#print ("Attempting to connect to {} on port {}".format(self.activeIPList[address], port))
 		try:
-			socketConnection.connect((TempAddress, TempPort)) #Double Parenthesis needed as it takes a single touple for paramaters 
+			socketConnection.connect((HOST, TempPort)) #Double Parenthesis needed as it takes a single touple for paramaters 
 			#print ("IP {} successfully opened port {}".format(self.activeIPList[address], port))
 			self.openPortList.append("{} ||".format(port))
-			print("SUUUUUUUUUUUUUUUUUUUUUCCCCCCCCCCCCCCEEEEEEEEEESSSSSSSSSSSSS\n\n\n\n\n\n\n\n\n\n\n\n")
 			return True
 		except socket.error as err:
-			print ("IP {} failed to open port {}, ERROR: {}".format(self.activeIPList[address], port, err))
+			print ("IP {} failed to open port {}, ERROR: {}".format(HOST, TempPort, err))
 			socket.error()
 			return False
 
