@@ -12,7 +12,10 @@ Analyze Brink Networks for Devices Connected to Network
 
 
 ###How to Use###
-Run on any computer attached to network to get a list of active devices. Eventually it will identify what those devices are and return the results.
+Start with a Scan -> Scan All
+Select an IP Address
+Scan -> Port Scan
+Will put a full list of open ports in the detailed window view
 
 ###Bugs###
 
