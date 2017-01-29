@@ -13,8 +13,11 @@ Analyze Brink Networks for Devices Connected to Network
 
 ###How to Use###
 Start with a Scan -> Scan All
+
 Select an IP Address
+
 Scan -> Port Scan
+
 Will put a full list of open ports in the detailed window view
 
 ###Bugs###
