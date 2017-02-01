@@ -16,8 +16,10 @@ to other known switches. Then, using arp lookup and ping -a, you
 can find the ip address/dns names of the hosts connected to the
 unmanaged switches.
 
-
-#Create Custom Header Renderer to change appearance. -- LOW
+#Add in Icons next to IP addresses to show what the device is - Low
+#Add Progress bar when performing IP scan/Port scanning - Low
+#All findings need to be save to a file that will also be read in to display found information -- Medium
+#Create Custom Header Renderer to change appearance of header to match GUI mockup. -- LOW
 
 """
 
@@ -30,11 +32,12 @@ class GUI(wx.Frame):
  
     #----------------------------------------------------------------------
     def __init__(self):
+        self.screenSize = wx.DisplaySize()
         wx.Frame.__init__(self, None, wx.ID_ANY, "Network Analyzer")
         self.window = wx.GetActiveWindow()
-        self.scan = scan.ScanNetwork(20)                                                        #Init scanNetwork class, 10 threads
+        self.scan = scan.ScanNetwork(10)                                                        #Init scanNetwork class, 10 threads
 
-        self.SetSize(1200,900)                                                                  #Set window size
+        self.SetSize(self.screenSize[0]- 50, self.screenSize[1]- 50)                                                                  #Set window size
         self.Centre()     
         self.version = '0.0.2'    
 
@@ -42,6 +45,8 @@ class GUI(wx.Frame):
         self.detailedFont = wx.Font(12, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.InsertCount = 0
         self.currentSelection = None
+
+        self.HasScannedPorts = False
         
 
         #Theme Pastel
@@ -152,12 +157,9 @@ class GUI(wx.Frame):
 
     #----------------------------------------------------------------------
     def OnIPListClick(self, event):
+        self.HasScannedPorts = False
         self.currentSelection = event.GetIndex()
-        for i in range(0, self.InsertCount):
-            if(self.InsertCount > 0):
-                #print("Deleting Item Index {}".f`ormat(i))
-                self.detailedULC.DeleteItem(i)
-                self.InsertCount -= 1
+        self.detailedULC.DeleteAllItems()
 
         self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._Get_Ping_Statistics(event.GetIndex()))
         self.InsertCount += 1
@@ -182,7 +184,32 @@ class GUI(wx.Frame):
         self.Close()
 
     #----------------------------------------------------------------------
+    def SetDefaultsAll(self):
+        self.scan._resetIPList()
+        self.scan._resetActiveIPList()
+        self.scan._resetPingStatisticsList()
+        self.SetDefaultsULC()
+        self.InsertCount = 0
+        self.HasScannedPorts = False
+
+    #----------------------------------------------------------------------
+    def SetDefaultsULC(self):
+        print("Resetting ULCs")
+        self.ipULC.DeleteAllItems()
+        self.ipULC.Refresh()
+        print("Reset IP ULC")
+        self.detailedULC.DeleteAllItems()
+        self.detailedULC.Refresh()
+        print("Reset Detailed ULC")
+        self.InsertCount = 0
+        self.HasScannedPorts = False
+
+    #----------------------------------------------------------------------
+    #Display all IP addresses that respond to a ping
     def ScanNetwork(self, event):
+        
+        self.SetDefaultsAll()
+
         self.scan._get_IP_From_ARP_Table()
         for currentIP in range(self.scan._get_ipList_Size()): #Add Ping Function To queue
             self.scan.primaryQueue.put(lambda currentIP = currentIP: self.scan._get_Active_IP_Addresses(currentIP)) 
@@ -197,21 +224,36 @@ class GUI(wx.Frame):
     #----------------------------------------------------------------------
     def ScanOpenPortsOnTargetIP(self, event):
 
-        for currentPort in range(0, 1024):
-            #print("{} CURRENT PORT".format(currentPort))
-            self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection, currentPort = currentPort: self.scan._Scan_IP_Port(ipaddress, currentPort))
+        #RESET LISTS TO DEFAULT         self.detailedULC, self.openPortList, self.ipList, self.pingStatistics
+        #RESET COUNTS TO DEFAULT
 
-        self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
-        self.InsertCount += 1
+        #self.scan._resetOpenPortList()
 
-        self.scan._startScan()
-        self.scan.primaryQueue.join() #wait until all IPs have been scanned on port, port.
 
-        #Add all entries into detailed view list
-        for ports in range(0, self.scan._get_Open_Ports_Size()):
-            self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._get_Open_Ports(ports))
+        if self.HasScannedPorts == True:
+            pass
+        else:
+            self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection : self.scan._Scan_IP_Port(ipaddress, 10051))
+            for currentPort in range(0, 1024):
+                #print("{} CURRENT PORT".format(currentPort))
+                self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection,
+                                              currentPort = currentPort: self.scan._Scan_IP_Port(ipaddress, currentPort))
+
+            self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
             self.InsertCount += 1
 
+            self.scan._startScan()
+            self.scan.primaryQueue.join() #wait until all IPs have been scanned on port, port.
+
+    
+            self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._get_Open_Ports(0))
+
+            #Add all entries into detailed view list
+            for ports in range(0, self.scan._get_Open_Ports_Size()):
+                self.detailedULC.SetStringItem(self.InsertCount , 0, self.scan._get_Open_Ports(ports) + self.detailedULC.GetItem(self.InsertCount).GetText())
+            
+            self.HasScannedPorts = True
+            self.InsertCount += 1
         
 
     #----------------------------------------------------------------------

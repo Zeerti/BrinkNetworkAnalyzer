@@ -18,10 +18,8 @@ class ScanNetwork():
 		self.pingStatistics = list()
 		self.activeIPList = list()
 		self.openPortList = list() #Stores all open Ports for a --SINGLE-- ipadress MUST BE CLEARED BEFORE REUSING
-		self.openPortIPList = list()
 		
 		self.totalIPFound = 0
-		self.pingPass = 0
 
 		self.totalJobsCompleted = 0
 	
@@ -43,10 +41,10 @@ class ScanNetwork():
 	def _get_Active_IP_Addresses(self, currentIPIteration):
 		cmdCommand = Popen(['ping', '-n', '1', self.ipList[currentIPIteration]], stdout=PIPE)
 		text = cmdCommand.communicate()[0]
-		self.pingStatistics.append(text)
 		cmdReturnCode = cmdCommand.returncode
 
 		if cmdReturnCode == 0:
+			self.pingStatistics.append(text)
 			self.activeIPList.append(self.ipList[currentIPIteration])
 		elif cmdReturnCode == 1: #No reply from host
 			pass	
@@ -79,20 +77,36 @@ class ScanNetwork():
 	def _Scan_IP_Port(self, address, port):
 		# Create a TCP socket
 		socketConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		socketConnection.settimeout(1)
+		socketConnection.settimeout(10)
 		HOST = str(address)
 		TempPort = port
 		#print ("Attempting to connect to {} on port {}".format(self.activeIPList[address], port))
 		try:
 			socketConnection.connect((HOST, TempPort)) #Double Parenthesis needed as it takes a single touple for paramaters 
 			#print ("IP {} successfully opened port {}".format(self.activeIPList[address], port))
-			self.openPortList.append("{} ||".format(port))
+			self.openPortList.append("{} ||".format(TempPort))
 			return True
 		except socket.error as err:
 			print ("IP {} failed to open port {}, ERROR: {}".format(HOST, TempPort, err))
 			socket.error()
 			return False
 
+	#----------------------------------------------------------------------
+	def _resetIPList(self):
+		del self.ipList[:]
+		self.totalIPFound = 0															
+
+	#----------------------------------------------------------------------
+	def _resetPingStatisticsList(self):
+		del self.pingStatistics[:]
+		
+	#----------------------------------------------------------------------
+	def _resetActiveIPList(self):
+		del self.activeIPList[:]
+
+	#----------------------------------------------------------------------
+	def _resetOpenPortList(self):
+		del self.openPortList[:]
 
 	#----------------------------------------------------------------------
 	def _get_ipList_Size(self):
