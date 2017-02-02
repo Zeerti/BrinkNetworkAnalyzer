@@ -1,10 +1,10 @@
-import ScanNetwork
+import scan
 
 port = 10051
 
 if __name__ == "__main__":
 
-	scan = ScanNetwork.ScanNetwork(10) #Create class, pass number of threads
+	scan = scan.ScanNetwork(10) #Create class, pass number of threads
 	scan._get_IP_From_ARP_Table()# Scrape IPs from ARP Table
 
 	#Add ping function to queue
