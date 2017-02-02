@@ -23,6 +23,8 @@ unmanaged switches.
 
 """
 
+#Convert everything to dictionaries to Save all findings to memory
+
 import wx
 import wx.lib.agw.ultimatelistctrl as ULC
 import scan
@@ -32,6 +34,8 @@ class GUI(wx.Frame):
  
     #----------------------------------------------------------------------
     def __init__(self):
+        self.nodes = {} #All found information on IP stored here nodes[IP][Info]
+
         self.screenSize = wx.DisplaySize()
         wx.Frame.__init__(self, None, wx.ID_ANY, "Network Analyzer")
         self.window = wx.GetActiveWindow()
@@ -133,15 +137,6 @@ class GUI(wx.Frame):
         self.detailedULC.SetBackgroundColour(self.darkGrey)
         self.detailedULC.SetTextColour(self.lightOrange)
         self.detailedULC.SetFont(self.detailedFont)
-        
-        #for i in range(0,15):
-        #    self.AddToListCtrl(self.detailedULC, 0, "192.168.1." + str(i))
-
-        #Ultimate List Control Test
-
-       
-        #self.list.SetPalette(7)
-
 
  
     ##BEGIN FUNCTIONS##
@@ -194,13 +189,10 @@ class GUI(wx.Frame):
 
     #----------------------------------------------------------------------
     def SetDefaultsULC(self):
-        print("Resetting ULCs")
         self.ipULC.DeleteAllItems()
         self.ipULC.Refresh()
-        print("Reset IP ULC")
         self.detailedULC.DeleteAllItems()
         self.detailedULC.Refresh()
-        print("Reset Detailed ULC")
         self.InsertCount = 0
         self.HasScannedPorts = False
 
@@ -219,6 +211,13 @@ class GUI(wx.Frame):
 
         for activeIP in range(self.scan._get_active_ipList_Size()):
             self.AddToListCtrl(self.ipULC, activeIP, self.scan.activeIPList[activeIP])
+
+        for i in self.scan.activeIPList:
+            self.nodes[i] = {'mac':'UNKNOWN',
+                        'ping':'UNKNOWN',
+                        'ports':'UNKNOWN',
+                        'gateway':'UNKNOWN', 
+                        'device':'UNKNOWN'}
             
 
     #----------------------------------------------------------------------

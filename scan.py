@@ -14,6 +14,7 @@ from subprocess import Popen, PIPE
 
 class ScanNetwork():
 	def __init__(self, max_Threads):
+		nodes={} #Where we store all the information gathered on ip addresses
 		self.ipList = list() #List of IP Address found on ARP Table
 		self.pingStatistics = list()
 		self.activeIPList = list()
