@@ -23,7 +23,7 @@ unmanaged switches.
 
 """
 
-#Convert everything to dictionaries to Save all findings to memory
+#Convert everything to dictionaries to Save all findings to memory to allow access of findings as long as program is open.
 
 import wx
 import wx.lib.agw.ultimatelistctrl as ULC
@@ -37,13 +37,13 @@ class GUI(wx.Frame):
         self.nodes = {} #All found information on IP stored here nodes[IP][Info]
 
         self.screenSize = wx.DisplaySize()
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Network Analyzer")
+        wx.Frame.__init__(self, None, wx.ID_ANY, "Brink Network Analyzer")
         self.window = wx.GetActiveWindow()
         self.scan = scan.ScanNetwork(10)                                                        #Init scanNetwork class, 10 threads
 
-        self.SetSize(self.screenSize[0]- 50, self.screenSize[1]- 50)                                                                  #Set window size
+        self.SetSize(self.screenSize[0]- 164, self.screenSize[1]- 105)                                                                  #Set window size
         self.Centre()     
-        self.version = '0.0.2'    
+        self.version = '0.0.4'    
 
         self.ipFont = wx.Font(14, wx.MODERN, wx.NORMAL, wx.NORMAL)      
         self.detailedFont = wx.Font(12, wx.SWISS, wx.NORMAL, wx.NORMAL)
@@ -101,8 +101,8 @@ class GUI(wx.Frame):
         #self.Bind(wx.EVT_MENU, self.DisplayVersion, versionMenu)                            #Bind version display function to menu click event
  
         # Create Panels for viewports
-        panel = wx.Panel(self, wx.ID_ANY, pos=(0,0), size=(200,863))                            #Panel to contain listctrl ipULC
-        panel2 = wx.Panel(self, wx.ID_ANY, pos=(200,0), size=(990,863))                         #Panel to contain listctrl detailedListControl
+        panel = wx.Panel(self, wx.ID_ANY, pos=(0,0), size=(200,860))                            #Panel to contain listctrl ipULC
+        panel2 = wx.Panel(self, wx.ID_ANY, pos=(200,0), size=(900,860))                         #Panel to contain listctrl detailedListControl
         
  
         #Add List Control Class to IP Viewport#
@@ -145,6 +145,7 @@ class GUI(wx.Frame):
     def OnIPListClick(self, event):
         self.HasScannedPorts = False
         self.currentSelection = event.GetIndex()
+        self.currentSelectionText = event.GetText()
         self.detailedULC.DeleteAllItems()
 
         self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan.nodes[str(event.GetText())]['ping'])
@@ -159,6 +160,7 @@ class GUI(wx.Frame):
         TempPosition = position
 
         TempListCtrl.InsertStringItem(TempPosition, TempItem)
+        self.InsertCount += 1
 
         TempListCtrl = None
         TempItem = None
@@ -168,11 +170,19 @@ class GUI(wx.Frame):
     def OnQuit(self, event):
         self.Close()
 
+        
+        #print("PING STATS\n\n\n\n\n\n\n\n")
+        #print(self.scan.pingStatistics)
+        #print("activeIPLIST\n\n\n\n\n\n\n\n")
+        #print(self.scan.activeIPList)
+        #print("OPEN PORT LIST\n\n\n\n\n\n\n\n")
+        #print(self.scan.openPortList)
+
     #----------------------------------------------------------------------
     def SetDefaultsAll(self):
-        self.scan._resetIPList()
-        self.scan._resetActiveIPList()
-        self.scan._resetPingStatisticsList()
+        #self.scan._resetIPList()
+        #self.scan._resetActiveIPList()
+        #self.scan._resetPingStatisticsList()
         self.SetDefaultsULC()
         self.InsertCount = 0
         self.HasScannedPorts = False
@@ -189,6 +199,7 @@ class GUI(wx.Frame):
     #----------------------------------------------------------------------
     #Display all IP addresses that respond to a ping
     def ScanNetwork(self, event):
+        iteration = 0
         
         self.SetDefaultsAll()
 
@@ -200,11 +211,13 @@ class GUI(wx.Frame):
         self.scan._startScan()                                                              #Run Queue
         self.scan.primaryQueue.join()                                                       #Wait for queue to finish
 
-        for activeIP in range(self.scan._get_active_ipList_Size()):
-            self.AddToListCtrl(self.ipULC, activeIP, self.scan.activeIPList[activeIP])
+        #for activeIP in range(self.scan._get_active_ipList_Size()):
+        #    self.AddToListCtrl(self.ipULC, activeIP, self.scan.activeIPList[activeIP])
 
+        for activeIP in self.scan.nodes:
+            self.ipULC.InsertStringItem(iteration, activeIP)
+            iteration += 1
             
-
     #----------------------------------------------------------------------
     def ScanOpenPortsOnTargetIP(self, event):
 
@@ -218,7 +231,6 @@ class GUI(wx.Frame):
                                               currentPort = currentPort: self.scan._Scan_IP_Port(ipaddress, currentPort))
 
             self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
-            self.InsertCount += 1
 
             self.scan._startScan()
             self.scan.primaryQueue.join()                                                   #wait until all IPs have been scanned on port, port.
@@ -230,10 +242,9 @@ class GUI(wx.Frame):
             # for ports in range(0, self.scan._get_Open_Ports_Size()):
             #    self.detailedULC.SetStringItem(self.InsertCount , 0, self.scan._get_Open_Ports(ports) + self.detailedULC.GetItem(self.InsertCount).GetText())
                 
-            self.detailedULC.InsertStringItem(self.InsertCount, self.scan.nodes[self.currentSelection]['ports'] + '|| ')
+            self.detailedULC.InsertStringItem(self.InsertCount, self.scan.nodes[self.currentSelection]['ports'] + ' || ')
             self.InsertCount += 1
 
-                
             self.HasScannedPorts = True
         
 
