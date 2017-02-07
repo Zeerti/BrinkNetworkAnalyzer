@@ -14,16 +14,13 @@ from subprocess import Popen, PIPE
 
 class ScanNetwork():
 	def __init__(self, max_Threads):
-		nodes={} #Where we store all the information gathered on ip addresses
-		self.ipList = list() #List of IP Address found on ARP Table
-		self.pingStatistics = list()
-		self.activeIPList = list()
-		self.openPortList = list() #Stores all open Ports for a --SINGLE-- ipadress MUST BE CLEARED BEFORE REUSING
+		self.nodes = {} #Where we store all the information gathered on ip addresses
+		self.ipList = list() #List of IP Address found on ARP Table ||||||| STILL IN USE
+		#self.pingStatistics = list()
+		#self.activeIPList = list()
+		#self.openPortList = list() #Stores all open Ports for a --SINGLE-- ipadress MUST BE CLEARED BEFORE REUSING
 		
 		self.totalIPFound = 0
-
-		self.totalJobsCompleted = 0
-	
 		self.primaryQueue = queue.Queue(maxsize=0)
 		self.num_threads = max_Threads
 
@@ -33,7 +30,6 @@ class ScanNetwork():
 		while True:
 			currentOperation = self.primaryQueue.get()
 			currentOperation()
-			self.totalJobsCompleted += 1
 			self.primaryQueue.task_done()
 
 
@@ -45,8 +41,14 @@ class ScanNetwork():
 		cmdReturnCode = cmdCommand.returncode
 
 		if cmdReturnCode == 0:
-			self.pingStatistics.append(text)
-			self.activeIPList.append(self.ipList[currentIPIteration])
+			#self.pingStatistics.append(text)
+			#####self.activeIPList.append(self.ipList[currentIPIteration])
+			self.nodes[self.ipList[currentIPIteration]] = {'mac':'UNKNOWN',
+															'ping':'UNKNOWN',
+															'ports':'UNKNOWN',
+															'gateway':'UNKNOWN', 
+															'device':'UNKNOWN'}
+			self.nodes[self.ipList[currentIPIteration]]['ping'] = text
 		elif cmdReturnCode == 1: #No reply from host
 			pass	
 		elif cmdReturnCode == 3: #General Failure to ping
@@ -84,8 +86,13 @@ class ScanNetwork():
 		#print ("Attempting to connect to {} on port {}".format(self.activeIPList[address], port))
 		try:
 			socketConnection.connect((HOST, TempPort)) #Double Parenthesis needed as it takes a single touple for paramaters 
-			#print ("IP {} successfully opened port {}".format(self.activeIPList[address], port))
-			self.openPortList.append("{} ||".format(TempPort))
+			#self.openPortList.append("{} ||".format(TempPort))
+			
+			if self.nodes[str(address)]['ports'] == 'UNKNOWN': #Ports have not been set.
+				self.nodes[str(address)]['ports'] = str(TempPort)
+			else:
+				self.nodes[str(address)]['ports'] = self.nodes[str(address)]['ports'] + '||' + str(TempPort)
+
 			return True
 		except socket.error as err:
 			print ("IP {} failed to open port {}, ERROR: {}".format(HOST, TempPort, err))
@@ -98,8 +105,8 @@ class ScanNetwork():
 		self.totalIPFound = 0															
 
 	#----------------------------------------------------------------------
-	def _resetPingStatisticsList(self):
-		del self.pingStatistics[:]
+	#def _resetPingStatisticsList(self):
+	#	del self.pingStatistics[:]
 		
 	#----------------------------------------------------------------------
 	def _resetActiveIPList(self):
@@ -126,8 +133,8 @@ class ScanNetwork():
 		return len(self.activeIPList)
 
 	#----------------------------------------------------------------------
-	def _Get_Ping_Statistics(self, iteration):
-		return self.pingStatistics[iteration]
+	#def _Get_Ping_Statistics(self, iteration):
+	#	return self.pingStatistics[iteration]
 
 	
 
