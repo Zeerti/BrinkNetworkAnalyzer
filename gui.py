@@ -103,8 +103,10 @@ class GUI(wx.Frame):
         # Create Panels for viewports
         panel = wx.Panel(self, wx.ID_ANY, pos=(0,0), size=(200,860))                            #Panel to contain listctrl ipULC
         panel2 = wx.Panel(self, wx.ID_ANY, pos=(200,0), size=(900,860))                         #Panel to contain listctrl detailedListControl
+        panel3 = wx.Panel(self, wx.ID_ANY, post=(0,0), size=(100,860))
         
- 
+    
+
         #Add List Control Class to IP Viewport#
         self.ipULC = ULC.UltimateListCtrl(panel, wx.ID_ANY, size=(200,863),
                                         agwStyle=wx.LC_REPORT|
@@ -138,8 +140,40 @@ class GUI(wx.Frame):
         self.detailedULC.SetTextColour(self.lightOrange)
         self.detailedULC.SetFont(self.detailedFont)
 
+
+        self.progressBar = wx.Gauge(self, range=100)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.progressBar, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+
+
+
+
  
     ##BEGIN FUNCTIONS##
+
+
+    ###TEST PROGRESS BAR FUNCTIONS###
+    ###############################################################################
+    #----------------------------------------------------------------------
+    def showProgress(self):
+        self.progressBar = wx.ProgressDialog("sum in progress", "please wait", maximum=self.maxPercent, parent=self, style=wx.PD_SMOOTH|wx.PD_AUTO_HIDE)
+
+    #----------------------------------------------------------------------
+    def destoryProgress(self):
+        self.progressBar.Destroy()
+
+    #----------------------------------------------------------------------
+    def updateProgress(self, percent):
+        keepGoing = True
+        time.sleep(1)
+        while keepGoing and self.percent < percent:
+            self.percent += 1 
+            (keepGoing, skip) = self.progress.Update(self.percent) #Call update function on progress bar passing it new % value
+            time.sleep(0.1) 
+
+    ###END TEST PROGRESS BAR FUNCTIONS###
+    ###############################################################################
 
     #----------------------------------------------------------------------
     def OnIPListClick(self, event):
