@@ -43,12 +43,14 @@ class GUI(wx.Frame):
 
         self.SetSize(self.screenSize[0]- 164, self.screenSize[1]- 105)                                                                  #Set window size
         self.Centre()     
-        self.version = '0.0.4'    
+        self.version = '0.0.5'    
 
         self.ipFont = wx.Font(14, wx.MODERN, wx.NORMAL, wx.NORMAL)      
         self.detailedFont = wx.Font(12, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.InsertCount = 0
         self.currentSelection = None
+        self.progressPercent = 0
+        self.maxPercent = None
 
         self.HasScannedPorts = False
         
@@ -103,7 +105,7 @@ class GUI(wx.Frame):
         # Create Panels for viewports
         panel = wx.Panel(self, wx.ID_ANY, pos=(0,0), size=(200,860))                            #Panel to contain listctrl ipULC
         panel2 = wx.Panel(self, wx.ID_ANY, pos=(200,0), size=(900,860))                         #Panel to contain listctrl detailedListControl
-        panel3 = wx.Panel(self, wx.ID_ANY, post=(0,0), size=(100,860))
+        panel3 = wx.Panel(self, wx.ID_ANY, pos=(0,0), size=(100,860))
         
     
 
@@ -156,21 +158,14 @@ class GUI(wx.Frame):
     ###TEST PROGRESS BAR FUNCTIONS###
     ###############################################################################
     #----------------------------------------------------------------------
-    def showProgress(self):
-        self.progressBar = wx.ProgressDialog("sum in progress", "please wait", maximum=self.maxPercent, parent=self, style=wx.PD_SMOOTH|wx.PD_AUTO_HIDE)
+    def showProgress(self, reason):
+        self.progressBar = wx.ProgressDialog(reason, "please wait", maximum=self.maxPercent, parent=self, style=wx.PD_SMOOTH|wx.PD_AUTO_HIDE)
 
     #----------------------------------------------------------------------
     def destoryProgress(self):
         self.progressBar.Destroy()
 
     #----------------------------------------------------------------------
-    def updateProgress(self, percent):
-        keepGoing = True
-        time.sleep(1)
-        while keepGoing and self.percent < percent:
-            self.percent += 1 
-            (keepGoing, skip) = self.progress.Update(self.percent) #Call update function on progress bar passing it new % value
-            time.sleep(0.1) 
 
     ###END TEST PROGRESS BAR FUNCTIONS###
     ###############################################################################
@@ -237,13 +232,23 @@ class GUI(wx.Frame):
         
         self.SetDefaultsAll()
 
+
         self.scan._get_IP_From_ARP_Table()                                                  #Get all IP from ARP
+
+        self.maxPercent = self.scan._get_ipList_Size()
+        self.showProgress('Scanning IP Addresses')
+        
         for currentIP in range(self.scan._get_ipList_Size()):                               #Add Ping Function To queue
+            iteration += 1
+            
             self.scan.primaryQueue.put(lambda currentIP = currentIP: 
                                             self.scan._get_Active_IP_Addresses(currentIP)) 
+            self.scan.primaryQueue.put(lambda percent = iteration : self.progressBar.Update(percent))
 
         self.scan._startScan()                                                              #Run Queue
         self.scan.primaryQueue.join()                                                       #Wait for queue to finish
+
+        iteration = 0
 
         #for activeIP in range(self.scan._get_active_ipList_Size()):
         #    self.AddToListCtrl(self.ipULC, activeIP, self.scan.activeIPList[activeIP])
@@ -251,23 +256,30 @@ class GUI(wx.Frame):
         for activeIP in self.scan.nodes:
             self.ipULC.InsertStringItem(iteration, activeIP)
             iteration += 1
+
+        self.destoryProgress()
             
     #----------------------------------------------------------------------
     def ScanOpenPortsOnTargetIP(self, event):
 
+        self.maxPercent = 1024
+
         if self.HasScannedPorts == True:
             pass
         else:
+            self.showProgress('Scanning Ports')
             self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection : self.scan._Scan_IP_Port(ipaddress, 10051))
             for currentPort in range(0, 1024):
-                
+                self.scan.primaryQueue.put(lambda percent = currentPort : self.progressBar.Update(percent))
                 self.scan.primaryQueue.put(lambda ipaddress = self.currentSelection,
                                               currentPort = currentPort: self.scan._Scan_IP_Port(ipaddress, currentPort))
 
             self.AddToListCtrl(self.detailedULC, self.InsertCount, "Current Open Ports")
 
-            self.scan._startScan()
-            self.scan.primaryQueue.join()                                                   #wait until all IPs have been scanned on port, port.
+            self.scan._startScan()                                                          #wait until all IPs have been scanned on port, port.
+            self.scan.primaryQueue.join()  
+
+            self.destoryProgress()                                                 
 
     
             #self.AddToListCtrl(self.detailedULC, self.InsertCount, self.scan._get_Open_Ports(0))
